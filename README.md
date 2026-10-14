@@ -1,5 +1,5 @@
 # SE Labs--PES1UG24CS684
-Software Engineering laboratory work for the Hospital Bed & ICU Allocation Dashboard.
+
 
 ## Student
 
