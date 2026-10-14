@@ -25,10 +25,16 @@ def grant(student, scheme, amount, audit=None):
 
 
 def disburse(award_id):
-    """Disburse an award and return its amount, or None if it does not exist."""
-    row = conn.execute("SELECT amount FROM awards WHERE id = ?", (award_id,)).fetchone()
+    """Return an award's amount, or None if it does not exist."""
+    row = conn.execute(
+        "SELECT amount FROM awards WHERE id = ?",
+        (award_id,),
+    ).fetchone()
     if row:
-        conn.execute("UPDATE awards SET disbursed = 1 WHERE id = ?", (award_id,))
+        conn.execute(
+            "UPDATE awards SET disbursed = 1 WHERE id = ?",
+            (award_id,),
+        )
         return row[0]
     return None
 
@@ -50,7 +56,10 @@ def by_scheme_count(scheme):
     """Return the number of awards for a scheme."""
     if scheme is None:
         return 0
-    return conn.execute("SELECT COUNT(*) FROM awards WHERE scheme = ?", (scheme,)).fetchone()[0]
+    return conn.execute(
+        "SELECT COUNT(*) FROM awards WHERE scheme = ?",
+        (scheme,),
+    ).fetchone()[0]
 
 
 def main():
