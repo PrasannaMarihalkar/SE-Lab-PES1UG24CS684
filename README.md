@@ -5,9 +5,6 @@
 **Name:** Prasanna Chidambar Marihalkar  
 **SRN:** PES1UG24CS684
 
-## Project
-
-**Hospital Bed & ICU Allocation Dashboard**
 
 ## Labs
 
