@@ -16,3 +16,4 @@
 - [Lab 3](Lab3) - Component Modelling & Architectural Pattern Selection
 - [Lab 4](Lab4) - Vibe Coding: Mastermind Game Enhancement
 - [Lab 5](Lab5) - Static Code Analysis (Pylint, Bandit and Flake8)
+- [Lab 6](Lab6) - Code and Branch Coverage Analysis (Food Delivery)
