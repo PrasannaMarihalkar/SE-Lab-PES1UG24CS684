@@ -127,6 +127,6 @@ python -m pytest -q test_food_delivery.py CodeCoverageTest_PES1UG24CS684_food_de
 
 The following commits record the Lab 6 implementation in this repository:
 
-- `PENDING_COMMIT_1`: `test: add Lab 6 code coverage analysis`
-- `PENDING_COMMIT_2`: `test: add Lab 6 branch coverage analysis`
-- `PENDING_COMMIT_3`: `docs: update Lab 6 README with verified commit hashes`
+- 724c1a4: 	est: add Lab 6 code coverage analysis
+- 823fff4: 	est: add Lab 6 branch coverage analysis
+- cb4c107: docs: update Lab 6 README with verified commit hashes
