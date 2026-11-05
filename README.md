@@ -14,3 +14,4 @@
 - [Lab 4](Lab4) - Vibe Coding: Mastermind Game Enhancement
 - [Lab 5](Lab5) - Static Code Analysis (Pylint, Bandit and Flake8)
 - [Lab 6](Lab6) - Code and Branch Coverage Analysis (Food Delivery)
+- [Lab 7](Lab7) - Fuzzing for Input Validation Bugs (Hypothesis)
