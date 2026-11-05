@@ -4,6 +4,7 @@
 **SRN:** PES1UG24CS684  
 **Course:** Software Engineering Lab (SE Lab)  
 **Assigned Repository:** [SETAPESU26/L6_L7_20_food_delivery](https://github.com/SETAPESU26/L6_L7_20_food_delivery)  
+**Personal Portfolio Repository:** [PrasannaMarihalkar/SE-Lab-PES1UG24CS684](https://github.com/PrasannaMarihalkar/SE-Lab-PES1UG24CS684)  
 **Assigned Application:** Food Delivery (`food_delivery.py`)  
 **Testing Frameworks:** Python 3.8+ / `pytest` / `Hypothesis`
 
@@ -13,7 +14,7 @@
 
 ## 1. Objective
 
-The primary objective of this laboratory is to apply **property-based fuzz testing** using Python's `Hypothesis` library to uncover subtle edge-case bugs, type errors, boundary conditions, and unhandled runtime exceptions in an assigned application (`food_delivery.py`). Upon exposing these vulnerabilities with reproducible counterexamples, the application is systematically hardened with defensive input validation contracts, and re-tested to verify complete bug resolution and regression prevention.
+The primary objective of this laboratory is to apply **property-based fuzz testing** using Python's `Hypothesis` library to uncover subtle edge-case bugs, type errors, boundary conditions, and unhandled runtime exceptions in an assigned application (`food_delivery.py`). Upon exposing these vulnerabilities with reproducible counterexamples, the application is systematically hardened with defensive input validation contracts, and re-tested with both Hypothesis and dedicated parametrized tests to verify complete bug resolution and regression prevention.
 
 ---
 
@@ -59,11 +60,12 @@ Running the Hypothesis fuzz test suite against the original, unhardened code rev
 | `delivery_eta` | `None` | `TypeError: float() argument must be a string or a real number, not 'NoneType'` | Missing null validation |
 | `delivery_eta` | `False` / `True` | Silently treats boolean as `0.0` or `1.0` km (`ETA: 15` / `19`) | In Python, `bool` is a subclass of `int` |
 | `delivery_eta` | `float('inf')` | `OverflowError: cannot convert float infinity to integer` | Inability to convert non-finite float to `int` |
+| `delivery_eta` | `10**500` (huge integer) | `OverflowError: int too large to convert to float` | Unhandled float conversion overflow |
 | `delivery_eta` | `-10.5` | Computes nonsensical negative ETA | Missing non-negative distance validation |
 | `coupon_discount` | `None` | `AttributeError: 'NoneType' object has no attribute 'upper'` | Missing null validation |
 | `coupon_discount` | `""`, `"DISCOUNT50"` | `IndexError: list index out of range` | `code.split('SAVE')[1]` assumes `'SAVE'` is present |
 | `coupon_discount` | `"SAVE-10"` | Returns negative discount `-10` | Suffix parsed as negative int without range check |
-| `coupon_discount` | `"MYSAVE50EXTRA"` | Silently accepts `'50EXTRA'` substring | Does not validate prefix boundary or suffix composition |
+| `coupon_discount` | `"MYSAVE50EXTRA"` | `ValueError: invalid literal for int() with base 10: '50EXTRA'` | Suffix extraction extracts `'50EXTRA'`, causing integer conversion `ValueError` rather than controlled prefix validation |
 
 ---
 
@@ -81,8 +83,9 @@ All three functions were hardened with defensive programming contracts using Pyt
 
 2. **`delivery_eta(distance_km)`**:
    - Explicitly rejects `None` and `bool` instances.
-   - Validates numeric convertibility to `float`.
+   - Catches `(ValueError, TypeError, OverflowError)` during float conversion.
    - Rejects non-finite values (`math.isnan` and `math.isinf`) with descriptive `ValueError`.
+   - Protects against arithmetic overflow during integer ETA calculation.
    - Enforces non-negative distances (`dist >= 0`).
    - Preserves exact original calculation: `int(15 + dist * 4)`.
 
@@ -91,6 +94,7 @@ All three functions were hardened with defensive programming contracts using Pyt
    - Trims whitespace and normalizes case to uppercase.
    - Requires the coupon to start strictly with prefix `SAVE`.
    - Requires the remaining suffix to be non-empty and digits-only (`discount_str.isdigit()`).
+   - Catches potential integer overflow.
    - Returns the non-negative integer discount or raises `ValueError`.
 
 4. **`main()`**:
@@ -105,10 +109,12 @@ The test suite in `test_food_delivery.py` utilizes comprehensive Hypothesis stra
 - `st.text() | st.none()`: Arbitrary text fuzzing combined with null values to test resilience against unpredictable input.
 - `st.dictionaries(keys=valid_item_name, values=valid_qty)`: Property-based generation of realistic orders to verify round-trip serialization and deserialization.
 - `st.floats(min_value=0.0, max_value=10000.0)` and `st.integers(min_value=0, max_value=10000)`: Generation of valid distance domains for calculation verification.
+- `st.integers(min_value=10**400, max_value=10**450)`: Hypothesis generation of extremely large integers verifying overflow resilience without crashing.
 - `st.sampled_from([float('nan'), float('inf'), float('-inf')])`: Targeted edge cases verifying rejection of non-finite floating point numbers.
 - `st.booleans()`: Ensuring booleans are not inadvertently accepted as numeric distances.
 - `st.sampled_from(["save", "Save", "SAVE", "sAvE"])`: Verifying case-insensitivity of coupon prefix handling.
 - `@example(...)`: Explicit edge-case regression tests (e.g. empty strings, whitespace, delimiters, negative values).
+- `@pytest.mark.parametrize`: Explicit validation suites testing 21 invalid order cases, 21 invalid distance cases, and 19 invalid coupon cases.
 
 ---
 
@@ -125,22 +131,20 @@ FAILED test_food_delivery.py::test_coupon_discount_no_crash
 ========================= 5 failed, 6 passed in 4.79s =========================
 ```
 
-### After Hardening (Fixed Code)
+### After Hardening & Quality Assurance (Fixed Code)
 ```text
 ============================= test session starts =============================
-test_food_delivery.py::test_parse_order_valid_generated PASSED           [  9%]
-test_food_delivery.py::test_parse_order_whitespace_handling PASSED       [ 18%]
-test_food_delivery.py::test_parse_order_no_crash PASSED                  [ 27%]
-test_food_delivery.py::test_delivery_eta_valid_calculation PASSED        [ 36%]
-test_food_delivery.py::test_delivery_eta_valid_numeric_string PASSED     [ 45%]
-test_food_delivery.py::test_delivery_eta_no_crash PASSED                 [ 54%]
-test_food_delivery.py::test_delivery_eta_rejects_booleans PASSED         [ 63%]
-test_food_delivery.py::test_delivery_eta_rejects_non_finite PASSED       [ 72%]
-test_food_delivery.py::test_coupon_discount_valid_format PASSED          [ 81%]
-test_food_delivery.py::test_coupon_discount_case_and_whitespace_insensitivity PASSED [ 90%]
-test_food_delivery.py::test_coupon_discount_no_crash PASSED              [100%]
+collecting ... collected 73 items
 
-============================= 11 passed in 1.10s ==============================
+test_food_delivery.py::test_parse_order_valid_generated PASSED           [  1%]
+test_food_delivery.py::test_parse_order_whitespace_handling PASSED       [  2%]
+test_food_delivery.py::test_parse_order_no_crash PASSED                  [  4%]
+...
+test_food_delivery.py::test_delivery_eta_rejects_overflowing_integers PASSED [ 41%]
+...
+test_food_delivery.py::test_coupon_discount_no_crash PASSED              [ 73%]
+...
+============================= 73 passed in 2.62s ==============================
 ```
 
 ---
@@ -157,7 +161,7 @@ python -m pip install hypothesis pytest
 python food_delivery.py
 ```
 
-### Execute the Hypothesis Fuzz Test Suite
+### Execute the Complete Test Suite
 ```powershell
 python -m pytest -vv test_food_delivery.py
 ```
@@ -191,4 +195,4 @@ The compiled PDF document containing genuine terminal screenshots, captions, and
 
 1. **Effectiveness of Property-Based Fuzzing:** Hypothesis uncovered critical blind spots (IndexError, AttributeError, OverflowError, boolean type coercion) that standard manual tests frequently miss.
 2. **Contract-Based Defensive Programming:** Establishing clear input validation contracts converting unexpected crashes into structured `ValueError` exceptions greatly enhances application robustness.
-3. **Regression Prevention:** Writing property-based tests ensures that future code modifications preserve valid input handling while strictly enforcing input boundary invariants.
+3. **Comprehensive Quality Assurance:** Combining property-based testing with dedicated parametrized edge cases ensures both broad exploration of infinite input domains and deterministic regression prevention for known boundary flaws.

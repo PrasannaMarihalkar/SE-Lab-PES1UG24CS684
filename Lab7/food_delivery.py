@@ -32,7 +32,7 @@ def parse_order(items_csv):
         
         try:
             qty = int(qty_str)
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, OverflowError):
             raise ValueError(f"Quantity for '{name}' must be an integer, got '{qty_str}'")
         
         if qty <= 0:
@@ -48,7 +48,7 @@ def delivery_eta(distance_km):
     Calculates estimated delivery time in minutes given distance in kilometers.
     Preserves original calculation: int(15 + float(distance_km) * 4)
     Rejects None, booleans, non-finite values (inf, nan), malformed strings,
-    and negative distances.
+    overflowing values, and negative distances.
     Raises ValueError on invalid input.
     """
     if isinstance(distance_km, bool) or distance_km is None:
@@ -56,7 +56,7 @@ def delivery_eta(distance_km):
     
     try:
         dist = float(distance_km)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, OverflowError):
         raise ValueError(f"Invalid distance value: {distance_km}")
     
     if math.isnan(dist) or math.isinf(dist):
@@ -65,7 +65,10 @@ def delivery_eta(distance_km):
     if dist < 0:
         raise ValueError(f"Distance cannot be negative, got {dist}")
     
-    return int(15 + dist * 4)
+    try:
+        return int(15 + dist * 4)
+    except (OverflowError, ValueError):
+        raise ValueError(f"Distance value calculation overflow: {distance_km}")
 
 
 def coupon_discount(code):
@@ -90,7 +93,11 @@ def coupon_discount(code):
     if not discount_str.isdigit():
         raise ValueError(f"Coupon discount amount must be a nonnegative integer, got '{discount_str}'")
     
-    discount = int(discount_str)
+    try:
+        discount = int(discount_str)
+    except (ValueError, OverflowError):
+        raise ValueError(f"Coupon discount value overflow: {discount_str}")
+        
     return discount
 
 

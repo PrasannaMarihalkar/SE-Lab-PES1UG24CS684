@@ -63,6 +63,35 @@ def test_parse_order_no_crash(s):
         pass
 
 
+@pytest.mark.parametrize("invalid_input", [
+    None,
+    "",
+    "   ",
+    "\t\n",
+    "pizza",                 # Missing colon
+    ":2",                    # Empty item name
+    "   :2",                 # Whitespace item name
+    "pizza:",                # Missing quantity
+    "pizza:   ",             # Whitespace quantity
+    "pizza:abc",             # Non-numeric quantity
+    "pizza:2.5",             # Float quantity
+    "pizza:0",               # Zero quantity
+    "pizza:-1",              # Negative quantity
+    "pizza:-99",             # Large negative quantity
+    "pizza:2:extra",         # Multiple colons
+    "pizza:2:3:4",           # Many colons
+    "pizza:2,,burger:1",     # Empty CSV entry between commas
+    ",pizza:2",              # Leading comma / empty entry
+    "pizza:2,",              # Trailing comma / empty entry
+    "pizza:1,pizza:2",       # Duplicate item names
+    "burger:2, burger:5",    # Duplicate item names with spaces
+])
+def test_parse_order_explicit_invalid_inputs(invalid_input):
+    """Dedicated parametrized test verifying that invalid order inputs cleanly raise ValueError."""
+    with pytest.raises(ValueError):
+        parse_order(invalid_input)
+
+
 # ============================================================================
 # B. Tests for delivery_eta(distance_km)
 # ============================================================================
@@ -126,6 +155,44 @@ def test_delivery_eta_rejects_non_finite(x):
         delivery_eta(x)
 
 
+@settings(max_examples=100, deadline=None)
+@given(st.integers(min_value=10**400, max_value=10**450))
+def test_delivery_eta_rejects_overflowing_integers(huge_int):
+    """Extremely large integers that would trigger OverflowError during float conversion
+    must be cleanly rejected with ValueError."""
+    with pytest.raises(ValueError):
+        delivery_eta(huge_int)
+
+
+@pytest.mark.parametrize("invalid_distance", [
+    None,
+    True,
+    False,
+    "",
+    "   ",
+    "\t\n",
+    "abc",
+    "4.5km",
+    "--5",
+    "-1",
+    "-0.001",
+    "-100",
+    float("nan"),
+    float("inf"),
+    float("-inf"),
+    "nan",
+    "inf",
+    "-infinity",
+    10**500,               # Huge integer causing float OverflowError
+    -(10**500),            # Huge negative integer causing float OverflowError
+    1e308,                 # Huge float causing int arithmetic overflow
+])
+def test_delivery_eta_explicit_invalid_inputs(invalid_distance):
+    """Dedicated parametrized test verifying that all invalid distance values raise ValueError."""
+    with pytest.raises(ValueError):
+        delivery_eta(invalid_distance)
+
+
 # ============================================================================
 # C. Tests for coupon_discount(code)
 # ============================================================================
@@ -170,3 +237,30 @@ def test_coupon_discount_no_crash(s):
         assert res >= 0
     except ValueError:
         pass
+
+
+@pytest.mark.parametrize("invalid_code", [
+    None,
+    "",
+    "   ",
+    "\t\n",
+    "SAVE",                 # SAVE without numeric suffix
+    "save",                 # Lowercase without suffix
+    "SAVE-10",              # Negative suffix
+    "SAVE-0",               # Hyphen prefix
+    "SAVEabc",              # Alphabetic suffix
+    "SAVETWENTY",           # Word suffix
+    "DISCOUNT50",           # Incorrect prefix
+    "OFF50",                # Incorrect prefix
+    "50SAVE",               # Prefix at end
+    "MYSAVE50",             # Prefix embedded in word
+    "MYSAVE50EXTRA",        # Embedded SAVE token with extra text
+    "SAVE50SAVE20",         # Multiple SAVE tokens
+    "SAVE 50",              # Space separator inside code
+    "SAVE50.5",             # Float decimal in suffix
+    "SAVE!",                # Symbol suffix
+])
+def test_coupon_discount_explicit_invalid_inputs(invalid_code):
+    """Dedicated parametrized test verifying that all invalid coupon codes raise ValueError."""
+    with pytest.raises(ValueError):
+        coupon_discount(invalid_code)
